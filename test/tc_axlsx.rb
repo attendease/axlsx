@@ -45,6 +45,16 @@ class TestAxlsx < Test::Unit::TestCase
     assert_equal(Axlsx.cell_range([c2, c1], true), "'Sheet &lt;''&gt;&quot; 1'!$A$1:$B$1")
   end
 
+  def test_cell_range_row
+    p = Axlsx::Package.new
+    ws = p.workbook.add_worksheet
+    row = ws.add_row
+    row.add_cell
+    row.add_cell
+    row.add_cell
+    assert_equal("A1:C1", Axlsx.cell_range(row, false))
+  end
+
   def test_name_to_indices
     setup_wide
     @wide_test_points.each do |key, value|
@@ -69,4 +79,25 @@ class TestAxlsx < Test::Unit::TestCase
     assert_equal([['Z5', 'AA5', 'AB5'], ['Z6', 'AA6', 'AB6']], Axlsx::range_to_a('Z5:AB6'))
   end
 
+  def test_sanitize_frozen_control_strippped
+    needs_sanitize = "legit\x08".freeze # Backspace control char
+
+    assert_equal(Axlsx.sanitize(needs_sanitize), 'legit', 'should strip control chars')
+  end
+
+  def test_sanitize_unfrozen_control_strippped
+    needs_sanitize = "legit\x08" # Backspace control char
+    sanitized_str = Axlsx.sanitize(needs_sanitize)
+
+    assert_equal(sanitized_str,           'legit',                  'should strip control chars')
+    assert_equal(sanitized_str.object_id, sanitized_str.object_id,  'should preserve object')
+  end
+
+  def test_sanitize_unfrozen_no_sanitize
+    legit_str = 'legit'
+    sanitized_str = Axlsx.sanitize(legit_str)
+
+    assert_equal(sanitized_str,           legit_str,            'should preserve value')
+    assert_equal(sanitized_str.object_id, legit_str.object_id,  'should preserve object')
+  end
 end

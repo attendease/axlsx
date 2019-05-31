@@ -1,10 +1,10 @@
 # encoding: UTF-8
 module Axlsx
-  # A LineSeries defines the title, data and labels for line charts
+  # A AreaSeries defines the title, data and labels for line charts
   # @note The recommended way to manage series is to use Chart#add_series
   # @see Worksheet#add_chart
   # @see Chart#add_series
-  class LineSeries < Series
+  class AreaSeries < Series
 
     # The data for this series.
     # @return [ValAxisData]

@@ -67,7 +67,7 @@ module Axlsx
   APP_R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties".freeze
 
   # core rels namespace
-  CORE_R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/metadata/core-properties".freeze
+  CORE_R = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties".freeze
 
   # digital signature rels namespace
   DIGITAL_SIGNATURE_R = "http://schemas.openxmlformats.org/package/2006/relationships/digital- signature/signature".freeze
@@ -385,13 +385,16 @@ module Axlsx
   # @see http://www.codetable.net/asciikeycodes
   pattern = "\x0-\x08\x0B\x0C\x0E-\x1F"
   pattern = pattern.respond_to?(:encode) ? pattern.encode('UTF-8') : pattern
-  
+
   # The regular expression used to remove control characters from worksheets
   CONTROL_CHARS = pattern.freeze
-  
+
+  # ISO 8601 date recognition
   ISO_8601_REGEX = /\A(-?(?:[1-9][0-9]*)?[0-9]{4})-(1[0-2]|0[1-9])-(3[0-1]|0[1-9]|[1-2][0-9])T(2[0-3]|[0-1][0-9]):([0-5][0-9]):([0-5][0-9])(\.[0-9]+)?(Z|[+-](?:2[0-3]|[0-1][0-9]):[0-5][0-9])?\Z/.freeze
-  
+
+  # FLOAT recognition
   FLOAT_REGEX = /\A[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?\Z/.freeze
-  
+
+  # Numeric recognition
   NUMERIC_REGEX = /\A[+-]?\d+?\Z/.freeze
 end

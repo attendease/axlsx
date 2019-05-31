@@ -14,6 +14,7 @@ examples << :surrounding_border
 examples << :deep_custom_borders
 examples << :row_column_style
 examples << :fixed_column_width
+examples << :height
 examples << :outline_level
 examples << :merge_cells
 examples << :images
@@ -21,6 +22,7 @@ examples << :format_dates
 examples << :mbcs
 examples << :formula
 examples << :auto_filter
+examples << :sheet_protection
 examples << :data_types
 examples << :override_data_types
 examples << :hyperlinks
@@ -50,6 +52,7 @@ examples << :no_autowidth
 examples << :cached_formula
 examples << :page_breaks
 examples << :rich_text
+examples << :tab_color
 
 p = Axlsx::Package.new
 wb = p.workbook
@@ -210,6 +213,7 @@ if examples.include? :row_column_style
     head = s.add_style :bg_color => "00", :fg_color => "FF"
     percent = s.add_style :num_fmt => 9
     wb.add_worksheet(:name => "Columns and Rows") do |sheet|
+      # Note: you must add rows to the document *BEFORE* applying column styles to them
       sheet.add_row ['col 1', 'col 2', 'col 3', 'col 4', 'col5']
       sheet.add_row [1, 2, 0.3, 4, 5.0]
       sheet.add_row [1, 2, 0.2, 4, 5.0]
@@ -245,6 +249,21 @@ if examples.include? :fixed_column_width
     sheet.column_widths nil, 3, 5, nil
   end
 end
+
+
+##Specifying Row height
+
+#```ruby
+if examples.include? :height
+  wb.styles do |s|
+    head = s.add_style :bg_color => "00", :fg_color => "FF"
+    wb.add_worksheet(:name => "fixed row height") do |sheet|
+      sheet.add_row ["This row will have a fixed height", "It will overwite the default row height"], :height => 30
+      sheet.add_row ["This row can have a different height too"], :height => 10, :style => head
+    end
+  end
+end
+
 
 #```ruby
 if examples.include? :outline_level
@@ -567,6 +586,7 @@ if examples.include? :defined_name
   wb.add_worksheet(:name => 'defined name') do |sheet|
     sheet.add_row [1, 2, 17, '=FOOBAR']
     wb.add_defined_name("'defined name'!$C1", :local_sheet_id => sheet.index, :name => 'FOOBAR')
+    wb.add_defined_name("'defined name'!$A$1:$C$1", :local_sheet_id => sheet.index, :name => '_xlnm.Print_Area')
   end
 end
 
@@ -574,10 +594,17 @@ end
 if examples.include? :sheet_protection
   unlocked = wb.styles.add_style :locked => false
   wb.add_worksheet(:name => 'Sheet Protection') do |sheet|
-    sheet.sheet_protection.password = 'fish'
-    sheet.add_row [1, 2 ,3] # These cells will be locked
-    sheet.add_row [4, 5, 6], :style => unlocked # these cells will not!
+    sheet.sheet_protection do |protection|
+      protection.password = 'fish'
+      protection.auto_filter = false
+    end
+
+    sheet.add_row [1, 2 ,3],  :style => unlocked # These cells will be locked
+    sheet.add_row [4, 5, 6]
+    sheet.add_row [7, 8, 9]
+    sheet.auto_filter = "A1:C3"
   end
+
 end
 
 ##Specify page margins and other options for printing
@@ -659,7 +686,7 @@ end
 
 ## Book Views
 #
-## Book views let you specify which sheet the show as active when the user opens the work book as well as a bunch of other 
+## Book views let you specify which sheet the show as active when the user opens the work book as well as a bunch of other
 ## tuning values for the UI @see Axlsx::WorkbookView
 ## ```ruby
 if examples.include? :book_view
@@ -683,6 +710,7 @@ end
 if examples.include? :conditional_formatting
   percent = wb.styles.add_style(:format_code => "0.00%", :border => Axlsx::STYLE_THIN_BORDER)
   money = wb.styles.add_style(:format_code => '0,000', :border => Axlsx::STYLE_THIN_BORDER)
+  status = wb.styles.add_style(:border => Axlsx::STYLE_THIN_BORDER)
 
   # define the style for conditional formatting
   profitable = wb.styles.add_style( :fg_color => "FF428751", :type => :dxf )
@@ -745,6 +773,19 @@ if examples.include? :conditional_formatting
     # Apply conditional formatting to range B3:B100 in the worksheet
     icon_set = Axlsx::IconSet.new
     sheet.add_conditional_formatting("B3:B100", { :type => :iconSet, :dxfId => profitable, :priority => 1, :icon_set => icon_set })
+  end
+
+  wb.add_worksheet(:name => "Contains Text") do |sheet|
+    sheet.add_row ["Previous Year Quarterly Profits (JPY)"]
+    sheet.add_row ["Quarter", "Profit", "% of Total", "Status"]
+    offset = 3
+    rows = 20
+    offset.upto(rows + offset) do |i|
+      sheet.add_row ["Q#{i}", 10000*((rows/2-i) * (rows/2-i)), "=100*B#{i}/SUM(B3:B#{rows+offset})", (10000*((rows/2-i) * (rows/2-i))) > 100000 ? "PROFIT" : "LOSS"], :style=>[nil, money, percent, status]
+    end
+  # Apply conditional formatting to range D3:D100 in the worksheet to match words.
+    sheet.add_conditional_formatting("D3:D100", { :type => :containsText, :operator => :equal, :text => "PROFIT", :dxfId => profitable, :priority => 1 })
+    sheet.add_conditional_formatting("D3:D100", { :type => :containsText, :operator => :equal, :text => "LOSS", :dxfId => unprofitable, :priority => 1 })
   end
 end
 
@@ -826,3 +867,19 @@ if examples.include? :rich_text
   p.serialize 'rich_text.xlsx'
 end
 #```
+
+##Change tab color of sheet
+
+#```ruby
+if examples.include? :tab_color
+  p = Axlsx::Package.new
+  p.use_shared_strings = true
+  wb = p.workbook
+  wb.add_worksheet(:name => "Change Tab Color") do |sheet|
+    sheet.add_row ["Check", "out", "the", "Tab Color", "below!"]
+    sheet.sheet_pr.tab_color = "FFFF6666"
+  end
+  p.serialize 'tab_color.xlsx'
+end
+##```
+

@@ -37,14 +37,14 @@ module Axlsx
       # to get less GC cycles
       type = options.delete(:type) || cell_type_from_value(value)
       self.type = type unless type == :string
-      
+
 
       val = options.delete(:style)
       self.style = val unless val.nil? || val == 0
       val = options.delete(:formula_value)
       self.formula_value = val unless val.nil?
-      
-      parse_options(options) 
+
+      parse_options(options)
 
       self.value = value
       value.cell = self if contains_rich_text?
@@ -64,9 +64,10 @@ module Axlsx
                      :family, :b, :i, :strike, :outline,
                      :shadow, :condense, :extend, :u,
                      :vertAlign, :sz, :color, :scheme].freeze
-                     
+
+    # An array of valid cell types
     CELL_TYPES = [:date, :time, :float, :integer, :richtext,
-                  :string, :boolean, :iso_8601].freeze
+                  :string, :boolean, :iso_8601, :text].freeze
 
     # The index of the cellXfs item to be applied to this cell.
     # @return [Integer]
@@ -79,7 +80,7 @@ module Axlsx
     # @return [Row]
     attr_reader :row
 
-    # The cell's data type. Currently only six types are supported, :date, :time, :float, :integer, :string and :boolean.
+    # The cell's data type.
     # Changing the type for a cell will recast the value into that type. If no type option is specified in the constructor, the type is
     # automatically determed.
     # @see Cell#cell_type_from_value
@@ -93,7 +94,7 @@ module Axlsx
     def type
       defined?(@type) ? @type : :string
     end
-    
+
     # @see type
     def type=(v)
       RestrictionValidator.validate :cell_type, CELL_TYPES, v
@@ -104,7 +105,7 @@ module Axlsx
     # The value of this cell.
     # @return [String, Integer, Float, Time, Boolean] casted value based on cell's type attribute.
     attr_reader :value
-    
+
     # @see value
     def value=(v)
       #TODO: consider doing value based type determination first?
@@ -115,15 +116,15 @@ module Axlsx
     # @return [Boolean]
     def is_text_run?
       defined?(@is_text_run) && @is_text_run && !contains_rich_text?
-    end 
-    
+    end
+
     def contains_rich_text?
       type == :richtext
     end
-    
+
     # Indicates if the cell is good for shared string table
     def plain_string?
-      type == :string &&         # String typed
+      (type == :string || type == :text) &&         # String typed
         !is_text_run? &&          # No inline styles
         !@value.nil? &&           # Not nil
         !@value.empty? &&         # Not empty
@@ -347,7 +348,9 @@ module Axlsx
 
     # returns the name of the cell
     attr_reader :name
-    
+
+    # Attempts to determine the correct width for this cell's content
+    # @return [Float]
     def autowidth
       return if is_formula? || value.nil?
       if contains_rich_text?
@@ -363,12 +366,12 @@ module Axlsx
         string_width(value, font_size)
       end
     end
-    
+
     # Returns the sanatized value
     # TODO find a better way to do this as it accounts for 30% of
     # processing time in benchmarking...
     def clean_value
-      if type == :string && !Axlsx::trust_input
+      if (type == :string || type == :text) && !Axlsx::trust_input
         Axlsx::sanitize(::CGI.escapeHTML(@value.to_s))
       else
         @value.to_s
@@ -376,17 +379,17 @@ module Axlsx
     end
 
     private
-    
+
     def styles
       row.worksheet.styles
     end
-    
+
     # Returns the width of a string according to the current style
     # This is still not perfect...
     #  - scaling is not linear as font sizes increase
     def string_width(string, font_size)
       font_scale = font_size / 10.0
-      (string.to_s.count(Worksheet::THIN_CHARS) + 3.0) * (font_size/10.0)
+      (string.to_s.count(Worksheet::THIN_CHARS) + 3.0) * font_scale
     end
 
     # we scale the font size if bold style is applied to either the style font or
@@ -452,7 +455,11 @@ module Axlsx
         v
       when :time
         self.style = STYLE_DATE if self.style == 0
-        v.respond_to?(:to_time) ? v.to_time : v
+        if !v.is_a?(Time) && v.respond_to?(:to_time)
+          v.to_time
+        else
+          v
+        end
       when :float
         v.to_f
       when :integer

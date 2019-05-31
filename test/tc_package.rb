@@ -7,6 +7,12 @@ class TestPackage < Test::Unit::TestCase
     ws = @package.workbook.add_worksheet
     ws.add_row ['Can', 'we', 'build it?']
     ws.add_row ['Yes!', 'We', 'can!']
+    @rt = Axlsx::RichText.new
+    @rt.add_run "run 1", :b => true, :i => false
+    ws.add_row [@rt]
+
+    ws.rows.last.add_cell('b', :type => :text)
+
     ws.outline_level_rows 0, 1
     ws.outline_level_columns 0, 1
     ws.add_hyperlink :ref => ws.rows.first.cells.last, :location => 'https://github.com/randym'
@@ -54,7 +60,7 @@ class TestPackage < Test::Unit::TestCase
     end
 
     ws.add_chart(Axlsx::BubbleChart, :title => 'bubble chart') do |chart|
-      chart.add_series :xData => [1,2,3,4], :yData => [4,3,2,1], :yData => [1,3,2,4]
+      chart.add_series :xData => [1,2,3,4], :yData => [1,3,2,4]
       chart.d_lbls.show_val = true
     end
 
@@ -154,6 +160,11 @@ class TestPackage < Test::Unit::TestCase
     assert package_1.to_stream.string == package_2.to_stream.string, "zip files are not identical"
   end
 
+  def test_serialization_creates_files_with_excel_mime_type
+    assert_equal(MimeMagic.by_magic(@package.to_stream).type,
+                 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  end
+
   def test_validation
     assert_equal(@package.validate.size, 0, @package.validate)
     Axlsx::Workbook.send(:class_variable_set, :@@date1904, 9900)
@@ -188,6 +199,7 @@ class TestPackage < Test::Unit::TestCase
 
   def test_shared_strings_requires_part
     @package.use_shared_strings = true
+    @package.to_stream #ensure all cell_serializer paths are hit
     p = @package.send(:parts)
     assert_equal(p.select{ |part| part[:entry] =~/xl\/sharedStrings.xml/}.size, 1, "shared strings table missing")
   end

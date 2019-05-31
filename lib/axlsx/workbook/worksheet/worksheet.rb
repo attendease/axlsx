@@ -8,7 +8,7 @@ module Axlsx
     # definition of characters which are less than the maximum width of 0-9 in the default font for use in String#count.
     # This is used for autowidth calculations
     THIN_CHARS = '^.acfijklrstxzFIJL()-'.freeze
-    
+
     # Creates a new worksheet.
     # @note the recommended way to manage worksheets is Workbook#add_worksheet
     # @see Workbook#add_worksheet
@@ -27,7 +27,7 @@ module Axlsx
       yield self if block_given?
     end
 
-    serializable_attributes :sheet_id, :name, :state
+    serializable_attributes :sheet_id, :state
 
     # Initalizes page margin, setup and print options
     # @param [Hash] options Options passed in from the initializer
@@ -91,7 +91,7 @@ module Axlsx
     # @see [SheetFormatPr]
     def sheet_format_pr
       @sheet_format_pr ||= SheetFormatPr.new
-      yeild @sheet_format_pr if block_given?
+      yield @sheet_format_pr if block_given?
       @sheet_format_pr
     end
 
@@ -152,7 +152,7 @@ module Axlsx
     # cell at a specific index. The block will be called with the row and column
     # index in the missing cell was found.
     # @example
-    #     cols { |row_index, column_index| p "warn - row #{row_index} is does not have a cell at #{column_index}
+    #     cols { |row_index, column_index| puts "warn - row #{row_index} does not have a cell at #{column_index}" }
     def cols(&block)
       @rows.transpose(&block)
     end
@@ -264,7 +264,7 @@ module Axlsx
       @header_footer
     end
 
-    # convinience method to access all cells in this worksheet
+    # convenience method to access all cells in this worksheet
     # @return [Array] cells
     def cells
       rows.flatten
@@ -303,50 +303,6 @@ module Axlsx
     # @return [SheetPr]
     def sheet_pr
       @sheet_pr ||= SheetPr.new self
-    end
-
-    # Indicates if gridlines should be shown in the sheet.
-    # This is true by default.
-    # @return [Boolean]
-    # @deprecated Use SheetView#show_grid_lines= instead.
-    def show_gridlines=(v)
-      warn('axlsx::DEPRECIATED: Worksheet#show_gridlines= has been depreciated. This value can be set over SheetView#show_grid_lines=.')
-      Axlsx::validate_boolean v
-      sheet_view.show_grid_lines = v
-    end
-
-    # @see selected
-    # @return [Boolean]
-    # @deprecated Use SheetView#tab_selected= instead.
-    def selected=(v)
-      warn('axlsx::DEPRECIATED: Worksheet#selected= has been depreciated. This value can be set over SheetView#tab_selected=.')
-      Axlsx::validate_boolean v
-      sheet_view.tab_selected = v
-    end
-
-    # Indicates if the worksheet should show gridlines or not
-    # @return Boolean
-    # @deprecated Use SheetView#show_grid_lines instead.
-    def show_gridlines
-      warn('axlsx::DEPRECIATED: Worksheet#show_gridlines has been depreciated. This value can get over SheetView#show_grid_lines.')
-      sheet_view.show_grid_lines
-    end
-
-    # Indicates if the worksheet is selected in the workbook
-    # It is possible to have more than one worksheet selected, however it might cause issues
-    # in some older versions of excel when using copy and paste.
-    # @return Boolean
-    # @deprecated Use SheetView#tab_selected instead.
-    def selected
-      warn('axlsx::DEPRECIATED: Worksheet#selected has been depreciated. This value can get over SheetView#tab_selected.')
-      sheet_view.tab_selected
-    end
-
-    # (see #fit_to_page)
-    # @return [Boolean]
-    def fit_to_page=(v)
-      warn('axlsx::DEPRECIATED: Worksheet#fit_to_page has been depreciated. This value will automatically be set for you when you use PageSetup#fit_to.')
-      fit_to_page?
     end
 
     # The name of the worksheet
@@ -555,7 +511,7 @@ module Axlsx
     # @example This would set the first and third column widhts but leave the second column in autofit state.
     #      ws.column_widths 7.2, nil, 3
     # @note For updating only a single column it is probably easier to just set the width of the ws.column_info[col_index].width directly
-    # @param [Integer|Float|Fixnum|nil] widths
+    # @param [Integer|Float|nil] widths
     def column_widths(*widths)
       widths.each_with_index do |value, index|
         next if value == nil
@@ -597,6 +553,7 @@ module Axlsx
       add_autofilter_defined_name_to_workbook
       str << '<sheet '
       serialized_attributes str
+      str << ('name="' << name << '" ')
       str << ('r:id="' << rId << '"></sheet>')
     end
 
@@ -629,7 +586,7 @@ module Axlsx
     # Returns the cell or cells defined using excel style A1:B3 references.
     # @param [String|Integer] cell_def the string defining the cell or range of cells, or the rownumber
     # @return [Cell, Array]
-    def [] (cell_def)
+    def [](cell_def)
       return rows[cell_def] if cell_def.is_a?(Integer)
       parts = cell_def.split(':').map{ |part| name_to_cell part }
       if parts.size == 1

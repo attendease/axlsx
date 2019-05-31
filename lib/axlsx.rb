@@ -1,6 +1,7 @@
 # encoding: UTF-8
 require 'htmlentities'
 require 'axlsx/version.rb'
+require 'mimemagic'
 
 require 'axlsx/util/simple_typed_list.rb'
 require 'axlsx/util/constants.rb'
@@ -10,7 +11,7 @@ require 'axlsx/util/serialized_attributes'
 require 'axlsx/util/options_parser'
 # to be included with parsable intitites.
 #require 'axlsx/util/parser.rb'
-require 'axlsx/util/string'
+require 'axlsx/util/mime_type_utils'
 
 require 'axlsx/stylesheet/styles.rb'
 
@@ -134,10 +135,14 @@ module Axlsx
   # @param [String] str The string to process
   # @return [String]
   def self.sanitize(str)
-    str.delete!(CONTROL_CHARS)
-    str
+    if str.frozen?
+      str.delete(CONTROL_CHARS)
+    else
+      str.delete!(CONTROL_CHARS)
+      str
+    end
   end
-  
+
   # If value is boolean return 1 or 0
   # else return the value
   # @param [Object] value The value to process

@@ -5,12 +5,11 @@ class TestPic < Test::Unit::TestCase
   def setup
     @p = Axlsx::Package.new
     ws = @p.workbook.add_worksheet
-    @test_img =  File.dirname(__FILE__) + "/../../examples/image1.jpeg"
-    @test_img_up = File.dirname(__FILE__) + "/../../examples/IMAGE1UP.JPEG"
-    @image = ws.add_image :image_src => @test_img, :hyperlink => 'https://github.com/randym', :tooltip => "What's up doc?"
-  end
-
-  def teardown
+    @test_img = @test_img_jpg =  File.dirname(__FILE__) + "/../../examples/image1.jpeg"
+    @test_img_png =  File.dirname(__FILE__) + "/../../examples/image1.png"
+    @test_img_gif =  File.dirname(__FILE__) + "/../../examples/image1.gif"
+    @test_img_fake =  File.dirname(__FILE__) + "/../../examples/image1_fake.jpg"
+    @image = ws.add_image :image_src => @test_img, :hyperlink => 'https://github.com/randym', :tooltip => "What's up doc?", :opacity => 5
   end
 
   def test_initialization
@@ -38,6 +37,7 @@ class TestPic < Test::Unit::TestCase
     assert_equal(200, @image.width)
 
   end
+
   def test_hyperlink
     assert_equal(@image.hyperlink.href, "https://github.com/randym")
     @image.hyperlink = "http://axlsx.blogspot.com"
@@ -70,15 +70,12 @@ class TestPic < Test::Unit::TestCase
   end
 
   def test_image_src
-    assert_raise(ArgumentError) { @image.image_src = 49 }
-    assert_raise(ArgumentError) { @image.image_src = 'Unknown' }
     assert_raise(ArgumentError) { @image.image_src = __FILE__ }
-    assert_nothing_raised { @image.image_src = @test_img }
-    assert_equal(@image.image_src, @test_img)
-  end
-
-  def test_image_src_downcase
-    assert_nothing_raised { @image.image_src = @test_img_up }
+    assert_raise(ArgumentError) { @image.image_src = @test_img_fake }
+    assert_nothing_raised { @image.image_src = @test_img_gif }
+    assert_nothing_raised { @image.image_src = @test_img_png }
+    assert_nothing_raised { @image.image_src = @test_img_jpg }
+    assert_equal(@image.image_src, @test_img_jpg)
   end
 
   def test_descr
@@ -103,5 +100,4 @@ class TestPic < Test::Unit::TestCase
     doc = Nokogiri::XML(@image.anchor.drawing.to_xml_string)
     assert_equal r_id, doc.xpath("//a:blip").first["r:embed"]
   end
-
 end
